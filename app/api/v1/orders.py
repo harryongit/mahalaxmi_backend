@@ -104,12 +104,15 @@ async def cancel_order(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    stmt = select(Order).where(Order.order_id == order_id, Order.user_id == current_user.id)
+    stmt = select(Order).where(Order.order_id == order_id)
     result = await db.execute(stmt)
     order = result.scalars().first()
     
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+        
+    if order.user_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not enough permissions - only order owner or admin can cancel")
         
     if order.status != OrderStatus.PENDING:
         raise HTTPException(status_code=400, detail="Only pending orders can be cancelled")
@@ -134,7 +137,7 @@ async def download_invoice(
         raise HTTPException(status_code=404, detail="Order not found")
         
     if order.user_id != current_user.id and not current_user.is_admin:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
+        raise HTTPException(status_code=403, detail="Not enough permissions - only order owner or admin can download invoice")
         
     if order.payment_status != PaymentStatus.PAID:
         raise HTTPException(status_code=400, detail="Invoice only available for paid orders")

@@ -79,6 +79,7 @@ async def verify_payment(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
+    # First verify the Razorpay signature server-side
     try:
         rzp_client.utility.verify_payment_signature({
             'razorpay_order_id': payload.razorpay_order_id,
@@ -87,8 +88,8 @@ async def verify_payment(
         })
     except razorpay.errors.SignatureVerificationError:
         raise HTTPException(status_code=400, detail="Invalid signature")
-
-    # Update Payment
+    
+    # Get the payment record
     stmt = select(Payment).where(Payment.razorpay_order_id == payload.razorpay_order_id)
     result = await db.execute(stmt)
     payment = result.scalars().first()
@@ -98,7 +99,15 @@ async def verify_payment(
         
     if payment.status == "COMPLETED":
         return {"message": "Payment already verified"}
-
+    
+    # Verify this payment belongs to an order belonging to the current user
+    stmt_order = select(Order).where(Order.id == payment.order_id, Order.user_id == current_user.id)
+    result_order = await db.execute(stmt_order)
+    order = result_order.scalars().first()
+    
+    if not order:
+        raise HTTPException(status_code=403, detail="Payment does not belong to current user")
+    
     payment.razorpay_payment_id = payload.razorpay_payment_id
     payment.status = "COMPLETED"
     payment.verification_source = PaymentVerificationSource.FRONTEND_VERIFIED
@@ -106,10 +115,6 @@ async def verify_payment(
     db.add(payment)
     
     # Update Order
-    stmt_order = select(Order).where(Order.id == payment.order_id)
-    result_order = await db.execute(stmt_order)
-    order = result_order.scalars().first()
-    
     order.payment_status = PaymentStatus.PAID
     order.status = OrderStatus.CONFIRMED
     db.add(order)
