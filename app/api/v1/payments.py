@@ -116,11 +116,11 @@ async def verify_payment(
     
     await db.commit()
     
-    from app.worker.tasks import send_whatsapp_notification, send_email_notification
+    from app.worker.tasks import send_whatsapp_notification, send_email_notification, dispatch
     if current_user.whatsapp_opt_in:
-        send_whatsapp_notification.delay(current_user.phone_number, f"Your order {order.order_id} has been confirmed! Thank you for your payment.")
+        dispatch(send_whatsapp_notification, current_user.phone_number, f"Your order {order.order_id} has been confirmed! Thank you for your payment.")
     if current_user.email:
-        send_email_notification.delay(current_user.email, "Order Confirmed", f"Your order {order.order_id} has been confirmed. Thank you!")
+        dispatch(send_email_notification, current_user.email, "Order Confirmed", f"Your order {order.order_id} has been confirmed. Thank you!")
     
     return {"message": "Payment verified successfully"}
 
@@ -166,15 +166,15 @@ async def razorpay_webhook(request: Request, db: AsyncSession = Depends(get_db))
                 
             await db.commit()
             
-            from app.worker.tasks import send_whatsapp_notification, send_email_notification
+            from app.worker.tasks import send_whatsapp_notification, send_email_notification, dispatch
             stmt_user = select(User).where(User.id == order.user_id)
             result_user = await db.execute(stmt_user)
             user = result_user.scalars().first()
             if user:
                 if user.whatsapp_opt_in:
-                    send_whatsapp_notification.delay(user.phone_number, f"Your order {order.order_id} has been confirmed! Thank you for your payment.")
+                    dispatch(send_whatsapp_notification, user.phone_number, f"Your order {order.order_id} has been confirmed! Thank you for your payment.")
                 if user.email:
-                    send_email_notification.delay(user.email, "Order Confirmed", f"Your order {order.order_id} has been confirmed. Thank you!")
+                    dispatch(send_email_notification, user.email, "Order Confirmed", f"Your order {order.order_id} has been confirmed. Thank you!")
             
     # Always return 200 OK for webhook idempotency
     return {"status": "ok"}

@@ -51,8 +51,8 @@ async def respond_to_enquiry(
     await db.commit()
     await db.refresh(enquiry)
     
-    from app.worker.tasks import send_email_notification
-    send_email_notification.delay(enquiry.email, f"Re: {enquiry.subject}", f"Dear {enquiry.name},\n\n{respond_in.admin_reply}")
+    from app.worker.tasks import send_email_notification, dispatch
+    dispatch(send_email_notification, enquiry.email, f"Re: {enquiry.subject}", f"Dear {enquiry.name},\n\n{respond_in.admin_reply}")
     
     return enquiry
 

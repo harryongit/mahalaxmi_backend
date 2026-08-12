@@ -2,7 +2,7 @@ import random
 import string
 from datetime import timedelta
 from typing import Optional
-from app.core.redis import redis_client
+from app.core.redis import get_redis
 from app.core.config import settings
 from app.core.logging import logger
 from app.worker.tasks import send_email_notification
@@ -14,10 +14,12 @@ async def generate_otp() -> str:
     return ''.join(random.choices(string.digits, k=6))
 
 async def save_otp(phone_number: str, otp: str) -> None:
+    redis_client = await get_redis()
     key = f"otp:{phone_number}"
     await redis_client.setex(key, timedelta(minutes=OTP_EXPIRY_MINUTES), otp)
 
 async def verify_otp(phone_number: str, provided_otp: str) -> bool:
+    redis_client = await get_redis()
     key = f"otp:{phone_number}"
     stored_otp = await redis_client.get(key)
     
@@ -52,6 +54,7 @@ async def send_otp_via_whatsapp(phone_number: str, otp: str) -> bool:
         return False
 
 async def check_rate_limit(phone_number: str) -> bool:
+    redis_client = await get_redis()
     key = f"rate_limit:otp:{phone_number}"
     # Max 5 per hour
     current = await redis_client.get(key)
@@ -66,11 +69,13 @@ async def check_rate_limit(phone_number: str) -> bool:
     return True
 
 async def send_otp_via_email(email: str, otp: str) -> bool:
-    send_email_notification.delay(email, "Your OTP Code", f"Your OTP is: {otp}")
+    from app.worker.tasks import dispatch
+    dispatch(send_email_notification, email, "Your OTP Code", f"Your OTP is: {otp}")
     logger.info("Dispatched email OTP via Celery", extra={"email": email})
     return True
 
 async def check_admin_lockout(email: str) -> bool:
+    redis_client = await get_redis()
     key = f"admin_lockout:{email}"
     current = await redis_client.get(key)
     if current and int(current) >= 5:
@@ -78,6 +83,7 @@ async def check_admin_lockout(email: str) -> bool:
     return True
 
 async def increment_admin_lockout(email: str) -> None:
+    redis_client = await get_redis()
     key = f"admin_lockout:{email}"
     pipe = redis_client.pipeline()
     pipe.incr(key)
@@ -85,5 +91,6 @@ async def increment_admin_lockout(email: str) -> None:
     await pipe.execute()
 
 async def reset_admin_lockout(email: str) -> None:
+    redis_client = await get_redis()
     key = f"admin_lockout:{email}"
     await redis_client.delete(key)

@@ -30,11 +30,10 @@ async def redis_override():
     fake = fakeredis.aioredis.FakeRedis(decode_responses=True)
     original = redis_module.redis_client
     redis_module.redis_client = fake
-    from app.services import auth as auth_service
-    auth_service.redis_client = fake
+    redis_module._initialized = True
     yield
     redis_module.redis_client = original
-    auth_service.redis_client = original
+    redis_module._initialized = False
 
 @pytest_asyncio.fixture(autouse=True)
 async def db_setup():

@@ -62,9 +62,9 @@ async def create_order(
     
     await db.commit()
 
-    from app.worker.tasks import send_whatsapp_notification
+    from app.worker.tasks import send_whatsapp_notification, dispatch
     if current_user.whatsapp_opt_in:
-        send_whatsapp_notification.delay(current_user.phone_number, f"Your order {order.order_id} has been placed! We will notify you once confirmed.")
+        dispatch(send_whatsapp_notification, current_user.phone_number, f"Your order {order.order_id} has been placed! We will notify you once confirmed.")
     
     # Refresh to get items loaded
     stmt = select(Order).options(selectinload(Order.items).selectinload(OrderItem.service)).where(Order.id == order.id)

@@ -7,6 +7,7 @@ alembic
 asyncpg
 psycopg2-binary
 redis
+fakeredis
 celery
 python-jose[cryptography]
 passlib[bcrypt]
@@ -20,5 +21,6 @@ weasyprint
 pytest
 pytest-asyncio
 httpx
+aiosqlite
 locust
 

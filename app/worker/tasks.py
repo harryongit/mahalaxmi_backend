@@ -2,6 +2,15 @@ from app.worker.celery_app import celery_app
 from app.core.logging import logger
 from app.core.config import settings
 
+def dispatch(task, *args, **kwargs):
+    """Fire a background task without crashing when the Celery worker/broker is unavailable."""
+    try:
+        task.delay(*args, **kwargs)
+        return True
+    except Exception as e:
+        logger.warning("Background task %s skipped (worker/broker unavailable): %s", task.name, e)
+        return False
+
 @celery_app.task
 def send_whatsapp_notification(phone_number: str, message: str):
     if not settings.TWILIO_ACCOUNT_SID:
