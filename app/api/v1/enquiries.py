@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import Any, List
@@ -10,7 +10,7 @@ from app.api.deps import get_current_active_admin
 
 router = APIRouter()
 
-@router.post("/", response_model=EnquiryOut)
+@router.post("/", response_model=EnquiryOut, status_code=status.HTTP_201_CREATED)
 async def create_enquiry(
     enquiry_in: EnquiryCreate,
     db: AsyncSession = Depends(get_db)

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -9,18 +9,31 @@ from datetime import datetime
 from app.db.session import get_db
 from app.models.user import User
 from app.models.order import Order, OrderItem, OrderStatus, PaymentStatus
+from app.models.service import Service
 from app.schemas.order import OrderCreate, OrderOut
 from app.api.deps import get_current_user, get_current_active_admin
 from app.utils.helpers import generate_order_id
 
 router = APIRouter()
 
-@router.post("/", response_model=OrderOut)
+@router.post("/", response_model=OrderOut, status_code=status.HTTP_201_CREATED)
 async def create_order(
     order_in: OrderCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
+    # Validate at least one item
+    if not order_in.items:
+        raise HTTPException(status_code=400, detail="Order must contain at least one item")
+
+    # Validate that all requested services exist
+    service_ids = list({item.service_id for item in order_in.items})
+    result = await db.execute(select(Service.id).where(Service.id.in_(service_ids)))
+    found_ids = set(result.scalars().all())
+    missing = [sid for sid in service_ids if sid not in found_ids]
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Invalid service_id: service(s) {missing} not found")
+
     # Calculate total amount based on items provided
     total_amount = sum([item.amount for item in order_in.items])
     

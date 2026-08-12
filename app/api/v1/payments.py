@@ -1,5 +1,5 @@
 import razorpay
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import Any
@@ -18,9 +18,10 @@ router = APIRouter()
 # Initialize Razorpay Client
 rzp_client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
-@router.post("/create-order", response_model=PaymentOut)
+@router.post("/create-order", response_model=PaymentOut, status_code=status.HTTP_201_CREATED)
 async def create_payment_order(
     payload: PaymentCreate,
+    response: Response,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
@@ -41,6 +42,7 @@ async def create_payment_order(
     existing_payment = res_payment.scalars().first()
     
     if existing_payment and existing_payment.status == "PENDING":
+        response.status_code = status.HTTP_200_OK
         return existing_payment
 
     # Create Razorpay Order

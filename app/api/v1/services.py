@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -38,7 +38,7 @@ async def get_service(
         raise HTTPException(status_code=404, detail="Service not found")
     return service
 
-@router.post("/", response_model=ServiceOut, dependencies=[Depends(get_current_active_admin)])
+@router.post("/", response_model=ServiceOut, status_code=status.HTTP_201_CREATED, dependencies=[Depends(get_current_active_admin)])
 async def create_service(
     service_in: ServiceCreate,
     db: AsyncSession = Depends(get_db)
