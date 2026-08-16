@@ -9,12 +9,11 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
-# Set up CORS
-origins = [o.strip() for o in settings.BACKEND_CORS_ORIGINS.split(",")]
+# Set up CORS allowing all origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -44,8 +43,3 @@ from app.api.v1.admin import auth as admin_auth
 app.include_router(admin_auth.router, prefix=f"{settings.API_V1_STR}/admin/auth", tags=["admin-auth"])
 app.include_router(dashboard.router, prefix=f"{settings.API_V1_STR}/admin/dashboard", tags=["admin-dashboard"])
 app.include_router(admin_users.router, prefix=f"{settings.API_V1_STR}/admin/users", tags=["admin-users"])
-
-
-
-
-

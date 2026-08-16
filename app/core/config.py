@@ -8,18 +8,18 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
 
-    # Database
-    DATABASE_URL: str
+    # MySQL Database
+    DATABASE_URL: str = "mysql+aiomysql://root:root@localhost:3306/mahalaxmi"
 
     # Redis
-    REDIS_URL: str
+    REDIS_URL: str = "redis://localhost:6379/0"
 
     # Security
-    JWT_SECRET: str
+    JWT_SECRET: str = "your-super-secret-jwt-key"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-    ENCRYPTION_KEY: str = "your-32-byte-encryption-key-here!" # 32 url-safe base64-encoded bytes or string
+    ENCRYPTION_KEY: str = "your-32-byte-encryption-key-here!"
 
     # Razorpay
     RAZORPAY_KEY_ID: str = ""
@@ -31,18 +31,20 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: str = ""
     TWILIO_WHATSAPP_NUMBER: str = ""
 
-    # CORS (comma-separated list; use "*" for all)
+    # CORS
     BACKEND_CORS_ORIGINS: str = "*"
 
-    # SMTP
-    SMTP_HOST: Optional[str] = ""
-    SMTP_PORT: Optional[int] = 0
-    SMTP_USER: Optional[str] = ""
-    SMTP_PASSWORD: Optional[str] = ""
-    EMAILS_FROM_EMAIL: Optional[str] = ""
-    EMAILS_FROM_NAME: Optional[str] = ""
+    # SMTP Configuration
+    SMTP_HOST: Optional[str] = "smtp.gmail.com"
+    SMTP_PORT: Optional[int] = 587
+    SMTP_USERNAME: Optional[str] = "pole2929@gmail.com"
+    SMTP_USER: Optional[str] = "pole2929@gmail.com"
+    SMTP_PASSWORD: Optional[str] = "ywdh qmwf tjuc mynk"
+    EMAILS_FROM_EMAIL: Optional[str] = "pole2929@gmail.com"
+    EMAILS_FROM_NAME: Optional[str] = "Shri Mahalaxmi Mandir Kolhapur"
+    ADMIN_RECEIVER_EMAIL: Optional[str] = "pratikshashitole2929@gmail.com"
 
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
 
 settings = Settings()
